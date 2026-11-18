@@ -15,7 +15,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         dgClientes.ItemsSource = clientes;
         CarregarClientes();
-        txtStatus.Text = "Sistema carregado com sucesso.";
+        /////////////txtStatus.Text = "Sistema carregado com sucesso."; /////////////////////////////////
     }
 
     private void CarregarClientes(string pesquisa = "")
@@ -29,7 +29,7 @@ public partial class MainWindow : Window
                 sql += " WHERE nome LIKE @pesquisa OR email LIKE @pesquisa OR cidade LIKE @pesquisa";
             sql += " ORDER BY id DESC";
             using var cmd = new MySqlCommand(sql, conexao);
-            if (!string.IsNullOrWhiteSpace(pesquisa)) cmd.Parameters.AddWithValue("@pesquisa", pesquisa + "%");
+            if (!string.IsNullOrWhiteSpace(pesquisa)) cmd.Parameters.AddWithValue("@pesquisa","%" + pesquisa + "%");////////////////////////////////////////
             using var reader = cmd.ExecuteReader();
             clientes.Clear();
             while (reader.Read())
@@ -55,7 +55,7 @@ public partial class MainWindow : Window
 
     private bool ValidarFormulario()
     {
-        if (string.IsNullOrWhiteSpace(txtNome.Text) && string.IsNullOrWhiteSpace(txtEmail.Text))
+        if (string.IsNullOrWhiteSpace(txtNome.Text) || string.IsNullOrWhiteSpace(txtEmail.Text))/////////////////////////////////////////////////////////
         {
             MessageBox.Show("Nome e e-mail são obrigatórios.");
             return false;
@@ -75,18 +75,27 @@ public partial class MainWindow : Window
             MessageBox.Show("E-mail inválido.");
             return false;
         }
-        if (string.IsNullOrWhiteSpace(txtCidade.Text||))////////////////////==========================================
+        if (string.IsNullOrWhiteSpace(txtCidade.Text))/////////////////////////////////////////////////////////////////
+        {
+            MessageBox.Show("Cidade é obrigatória.");/////////////////////////////////////////////////////////
+            return false;/////////////////////////////////////////////////////////////////////////////////
+        }
         {
             MessageBox.Show("Informe a cidade.");
-            return false;/////////////////////////////////////////////////===========================================
+            return false;///////////////////////////////////////////////////////////////////////////////////////////////////
         }
         return true;
     }
 
     private void btnSalvar_Click(object sender, RoutedEventArgs e)
     {
+        if (idSelecionado != 0)///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        {
+            MessageBox.Show($"Os campos estão com o cliente #{idSelecionado}. Use \"Editar\" para alterá-lo ou \"Novo\" para cadastrar outro cliente.");///////////////////////////////
+            return;///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        }
         if (!ValidarFormulario()) return;
-        MessageBox.Show("Cliente cadastrado com sucesso!", "Cadastro");
+       
         try
         {
 
@@ -95,12 +104,13 @@ public partial class MainWindow : Window
             const string sql = "INSERT INTO clientes (nome, email, idade, cidade, ativo) VALUES (@nome, @email, @idade, @cidade, @ativo)";
             using var cmd = new MySqlCommand(sql, conexao);
             cmd.Parameters.AddWithValue("@nome", txtNome.Text.Trim());/////////////////////////////////////////////////////////////////////////////////////
+            MessageBox.Show("Cliente cadastrado com sucesso!", "Cadastro");
             cmd.Parameters.AddWithValue("@email", txtEmail.Text.Trim());///////////////////////////////////////////////////////////////////////////////////
-            cmd.Parameters.AddWithValue("@idade", Convert.ToInt32(txtIdade.Text));
+            cmd.Parameters.AddWithValue("@idade", int.Parse(txtIdade.Text));//////////////////////////////////////////////////////////////////////////////////////
             cmd.Parameters.AddWithValue("@cidade", txtCidade.Text.Trim());
-            cmd.Parameters.AddWithValue("@ativo", chkAtivo.IsChecked == true);//------------------------------------------------------------
+            cmd.Parameters.AddWithValue("@ativo", chkAtivo.IsChecked == true);//////////////////////////////////////////////////////////////////////////////////
             cmd.ExecuteNonQuery();
-            LimparCampos(false);
+            LimparCampos(true);///////////////////////////////////////////////////////////////////////
             txtStatus.Text = "Cadastro concluído.";
             CarregarClientes(txtPesquisa.Text.Trim()); /////////////////////////////////////////////////////////////////////
         }
@@ -131,8 +141,15 @@ public partial class MainWindow : Window
             cmd.Parameters.AddWithValue("@ativo", chkAtivo.IsChecked == true);
             cmd.Parameters.AddWithValue("@id", idSelecionado);///////////////////////////////////////////////////////////////////
             var linhas = cmd.ExecuteNonQuery();
-            MessageBox.Show("Cliente atualizado com sucesso!");
-            CarregarClientes();
+            if (linhas == 0)
+            {
+                MessageBox.Show("Falha ao atualizar: cliente não encontrado.Ele pode ter sido excluido");//////////////////////////////////////
+                LimparCampos(true);////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                CarregarClientes(txtPesquisa.Text.Trim());/////////////////////////////////////////////////////////////////////////////////////
+                return;
+            }
+            MessageBox.Show("Cliente atualizado com sucesso!");////////////////////////////////////////////////////////////////
+            LimparCampos(true);////////////////////////////////////////////////////////////////////////////////////////////////////////////
             txtStatus.Text = $"Atualização concluída. {linhas} linha(s) afetada(s).";
             CarregarClientes(txtPesquisa.Text.Trim());//////////////////////////////////////////////////////////////////////
         }
@@ -171,7 +188,7 @@ public partial class MainWindow : Window
         txtEmail.Text = c.Email;
         txtIdade.Text = c.Idade.ToString();
         txtCidade.Text = c.Cidade;
-        chkAtivo.IsChecked = !c.Ativo;
+        chkAtivo.IsChecked = c.Ativo;//////////////////////////////////////////////////////////////////////////////////////////////////
         txtStatus.Text = $"Cliente #{c.Id} selecionado.";
         CarregarClientes(txtPesquisa.Text.Trim());/////////////////////////////////////////////////////////////////////////////////////
     }
@@ -190,7 +207,7 @@ public partial class MainWindow : Window
     private void btnNovo_Click(object sender, RoutedEventArgs e)
     {
         idSelecionado = 0; ///////////////////////////////////////////////////////////////////////////////////////////////////
-        LimparCampos(false);
+        LimparCampos(true);/////////////////////////////////////////////////////////////////////////////////////////////////////////
         txtNome.Focus();
         txtStatus.Text = "Novo cadastro.";
         CarregarClientes(txtPesquisa.Text.Trim());//////////////////////////////////////////////////////////////////////////////////
@@ -198,18 +215,19 @@ public partial class MainWindow : Window
 
     private void btnLimpar_Click(object sender, RoutedEventArgs e)
     {
-        LimparCampos(false);
+        LimparCampos(true);
         txtStatus.Text = "Campos limpos.";
         CarregarClientes(txtPesquisa.Text.Trim());///////////////////////////////////////////////////////////////////////////////////
     }
 
     private void LimparCampos(bool limparId)
     {
+        idSelecionado = 0;
+        dgClientes.SelectedItem = null;
         txtNome.Clear();
         txtEmail.Clear();
         txtIdade.Clear();
         txtCidade.Clear();
         chkAtivo.IsChecked = true;
-        if (limparId) idSelecionado = 0;
     }
 }
