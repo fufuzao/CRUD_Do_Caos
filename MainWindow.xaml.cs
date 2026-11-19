@@ -15,7 +15,6 @@ public partial class MainWindow : Window
         InitializeComponent();
         dgClientes.ItemsSource = clientes;
         CarregarClientes();
-        /////////////txtStatus.Text = "Sistema carregado com sucesso."; /////////////////////////////////
     }
 
     private void CarregarClientes(string pesquisa = "")
